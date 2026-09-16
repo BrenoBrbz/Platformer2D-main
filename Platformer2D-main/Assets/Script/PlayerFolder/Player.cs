@@ -2,27 +2,55 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    Rigidbody2D myRigidbody;
-    Animator animator;
+    private Rigidbody2D myRigidbody;
+    private Animator animator;
 
     public float speed = 5f;
     public float forceJump = 5f;
+
     private Vector3 originalScale;
 
-    private bool hasJumped = false; // controla se já apertou espaço
+    private bool hasJumped = false;
 
-    void Start()
+    public HealthBase healthBase;
+    public float timeToDestroy = 1f;
+
+    public string triggerDeath = "Death";
+
+    private void Awake()
     {
         myRigidbody = GetComponent<Rigidbody2D>();
 
         animator = GetComponent<Animator>();
+
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
+        healthBase = GetComponent<HealthBase>();
+
+        if (healthBase != null)
+        {
+            healthBase.OnKill += OnPlayerKill;
+        }
+    }
+
+    private void OnPlayerKill()
+    {
+        if (healthBase != null)
+        {
+            healthBase.OnKill -= OnPlayerKill;
+        }
+
+        animator.SetTrigger(triggerDeath);
+        Destroy(gameObject, timeToDestroy);
+    }
+
+    private void Start()
+    {
         originalScale = transform.localScale;
     }
 
-    void Update()
+    private void Update()
     {
         Walk();
         Jump();
@@ -36,23 +64,41 @@ public class Player : MonoBehaviour
         if (Input.GetKey(KeyCode.A))
         {
             move = -speed;
+
             if (transform.localScale.x > 0)
-                transform.localScale = new Vector3(-Mathf.Abs(originalScale.x), transform.localScale.y, transform.localScale.z);
+            {
+                transform.localScale = new Vector3(
+                    -Mathf.Abs(originalScale.x),
+                    transform.localScale.y,
+                    transform.localScale.z
+                );
+            }
         }
         else if (Input.GetKey(KeyCode.D))
         {
             move = speed;
+
             if (transform.localScale.x < 0)
-                transform.localScale = new Vector3(Mathf.Abs(originalScale.x), transform.localScale.y, transform.localScale.z);
+            {
+                transform.localScale = new Vector3(
+                    Mathf.Abs(originalScale.x),
+                    transform.localScale.y,
+                    transform.localScale.z
+                );
+            }
         }
 
-        // aplica movimento horizontal
-        myRigidbody.linearVelocity = new Vector2(move, myRigidbody.linearVelocity.y);
+        // Aplica movimento horizontal
+        myRigidbody.linearVelocity = new Vector2(
+            move,
+            myRigidbody.linearVelocity.y
+        );
 
-        // animação de andar
+        // Animação de andar
         if (animator != null && !hasJumped)
         {
             bool isWalking = move != 0;
+
             animator.SetBool("isWalking", isWalking);
         }
     }
@@ -61,21 +107,24 @@ public class Player : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space) && !hasJumped)
         {
-            myRigidbody.linearVelocity = new Vector2(myRigidbody.linearVelocity.x, forceJump);
+            myRigidbody.linearVelocity = new Vector2(
+                myRigidbody.linearVelocity.x,
+                forceJump
+            );
 
             hasJumped = true;
 
             if (animator != null)
             {
                 animator.SetBool("isWalking", false);
-                animator.SetBool("isJumping", true); // ativa animação de pulo
+                animator.SetBool("isJumping", true);
             }
         }
     }
 
     private void UpdateJumpAnimation()
     {
-        // se o personagem estiver caindo ou parado na Y, considera que caiu
+        // Se o personagem estiver caindo ou parado na Y, considera que caiu
         if (hasJumped && myRigidbody.linearVelocity.y <= 0f)
         {
             hasJumped = false;
@@ -84,6 +133,14 @@ public class Player : MonoBehaviour
             {
                 animator.SetBool("isJumping", false);
             }
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (healthBase != null)
+        {
+            healthBase.OnKill -= OnPlayerKill;
         }
     }
 }

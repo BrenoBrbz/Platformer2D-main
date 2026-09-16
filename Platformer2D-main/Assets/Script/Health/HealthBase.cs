@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class HealthBase : MonoBehaviour
@@ -6,12 +7,21 @@ public class HealthBase : MonoBehaviour
     public bool DestroyOnKill = false;
     private int _currentLife;
     private bool _isDead = false;
+
+    public Action OnKill;
+
+    private FlashColor _flashColor;
     private void Awake()
     {
         Init();
+        if(_flashColor == null)
+        {
+            _flashColor = GetComponent<FlashColor>();
+
+        }
     }
 
-    // Update is called once per frame
+  
     private void Init()
     {
         _isDead = false;
@@ -27,6 +37,11 @@ public class HealthBase : MonoBehaviour
         {
             Kill();
         }
+
+        if(_flashColor != null)
+        {
+            _flashColor.Flash();
+        }
     }
 
     private void Kill()
@@ -37,5 +52,8 @@ public class HealthBase : MonoBehaviour
         {
             Destroy(gameObject);
         }
+
+        OnKill?.Invoke();
+
     }
 }
